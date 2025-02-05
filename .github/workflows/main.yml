@@ -25,15 +25,15 @@ jobs:
 
       - name: Build with Maven
         run: mvn clean install
-        working-directory: BlockDAG-Automation/src/test/resources
+        working-directory: BlockDAG-Automation  # Build from the directory containing pom.xml
 
       - name: Start Application
         run: mvn clean start  # Assuming 'start' is a valid goal/command in your setup
-        working-directory: qa-automations-scripts-main/BlockDAG-Automation
+        working-directory: BlockDAG-Automation  # Start the application from the root directory
 
       - name: Run Tests
-        run: mvn test
-        working-directory: BlockDAG-Automation/src/test/resources
+        run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml  # Specify the location of your testng.xml
+        working-directory: BlockDAG-Automation  # Run tests from the root directory
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4
