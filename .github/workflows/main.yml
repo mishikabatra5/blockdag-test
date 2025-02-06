@@ -47,7 +47,7 @@ jobs:
 
       - name: Upload Emailable Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: emailable-report
           path: BlockDAG-Automation/test-output/emailable-report.html
