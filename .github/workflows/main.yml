@@ -32,7 +32,7 @@ jobs:
         working-directory: BlockDAG-Automation  # Start the application from the root directory
 
       - name: Run Tests
-        run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml  # Specify the location of your testng.xml
+        run: mvn clean test -DsuiteXmlFile=src/test/resources/testng.xml  # Specify the location of your testng.xml
         working-directory: BlockDAG-Automation  # Run tests from the root directory
 
       - name: Upload Test Reports
