@@ -53,11 +53,11 @@ jobs:
           name: surefire-reports
           path: BlockDAG-Automation/target/surefire-reports
 
-      - name: Upload Emailable Report
+      - name: Upload ExtentReport
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emailable-report
+          name: ExtentReport
           path: BlockDAG-Automation/test-output/ExtentReport.html
 
       # ✅ Upload reports to S3
@@ -65,4 +65,4 @@ jobs:
         if: always()
         run: |
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/surefire-reports/ --recursive
-          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/emailable-report.html
+          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/ExtentReport.html
