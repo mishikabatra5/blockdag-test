@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: emailable-report
-          path: BlockDAG-Automation/test-output/emailable-report.html
+          path: BlockDAG-Automation/test-output/ExtentReport.html
 
       # ✅ Upload reports to S3
       - name: Upload Test Reports to S3
