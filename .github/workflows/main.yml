@@ -33,6 +33,15 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::211125780543:oidc-provider/token.actions.githubusercontent.com
+          aws-region: us-east-1
+
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
       - name: Run Tests
         run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml
         working-directory: BlockDAG-Automation
@@ -51,15 +60,9 @@ jobs:
           name: emailable-report
           path: BlockDAG-Automation/test-output/emailable-report.html
 
-      # ✅ Configure AWS CLI with OIDC
-      - name: Configure AWS CLI with OIDC
-        run: |
-          aws sts get-caller-identity
-        env:
-          AWS_REGION: us-east-1  # Update this with your region
-
       # ✅ Upload reports to S3
       - name: Upload Test Reports to S3
+        if: always()
         run: |
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockdag/surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockdag/emailable-report.html
