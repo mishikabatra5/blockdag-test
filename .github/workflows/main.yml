@@ -64,5 +64,5 @@ jobs:
       - name: Upload Test Reports to S3
         if: always()
         run: |
-          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockdag/surefire-reports/ --recursive
-          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockdag/emailable-report.html
+          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/surefire-reports/ --recursive
+          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/emailable-report.html
