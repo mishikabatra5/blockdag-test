@@ -36,8 +36,8 @@ jobs:
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::211125780543:oidc-provider/token.actions.githubusercontent.com
-          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::211125780543:role/stage-oidc-blockdag
+          aws-region: eu-central-1
 
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
