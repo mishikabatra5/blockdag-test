@@ -42,52 +42,39 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      - name: Determine Environment
-        id: env
+      - name: Run Tests for Mainnet
+        id: mainnet
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "ENVIRONMENT=mainnet" >> $GITHUB_ENV
-          else
-            echo "ENVIRONMENT=stage" >> $GITHUB_ENV
-          fi
-
-      - name: Run Tests
-        run: |
-          if [[ "$ENVIRONMENT" == "mainnet" ]]; then
-            mvn clean test -D=https://bdagscan.com
-          else
-            mvn test -DsuiteXmlFile=src/test/resources/testng.xml
-          fi
+          mvn clean test -D=https://bdagscan.com
         working-directory: BlockDAG-Automation
 
-      - name: Upload Surefire Reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports
-          path: BlockDAG-Automation/target/surefire-reports
-
-      - name: Upload ExtentReport
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ExtentReport
-          path: BlockDAG-Automation/test-output/ExtentReport.html
-
-      # ✅ Upload reports to S3
-      - name: Upload Test Reports to S3
+      - name: Upload Mainnet Reports to S3
         if: always()
         run: |
           # Get current date and time
           CURRENT_DATE=$(date +'%Y/%m/%d')
           CURRENT_TIME=$(date +'%H-%M-%S')
+          S3_PATH="mainnet/${CURRENT_DATE}/${CURRENT_TIME}/"
           
-          # Determine the S3 path based on the environment
-          if [[ "$ENVIRONMENT" == "mainnet" ]]; then
-            S3_PATH="mainnet/${CURRENT_DATE}/${CURRENT_TIME}/"
-          else
-            S3_PATH="stage/${CURRENT_DATE}/${CURRENT_TIME}/"
-          fi
+          # Upload Surefire Reports
+          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_PATH}surefire-reports/ --recursive
+          
+          # Upload ExtentReport
+          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_PATH}ExtentReport.html
+
+      - name: Run Tests for Stage
+        id: stage
+        run: |
+          mvn test -DsuiteXmlFile=src/test/resources/testng.xml
+        working-directory: BlockDAG-Automation
+
+      - name: Upload Stage Reports to S3
+        if: always()
+        run: |
+          # Get current date and time
+          CURRENT_DATE=$(date +'%Y/%m/%d')
+          CURRENT_TIME=$(date +'%H-%M-%S')
+          S3_PATH="stage/${CURRENT_DATE}/${CURRENT_TIME}/"
           
           # Upload Surefire Reports
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_PATH}surefire-reports/ --recursive
