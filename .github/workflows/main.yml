@@ -74,4 +74,4 @@ jobs:
         run: |
           STATUS=${{ job.status }}
           MESSAGE="Test run completed with status: $STATUS"
-          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$MESSAGE\"}" https://hooks.slack.com/services/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
+          curl -X POST -H 'Content-type: application/json' --data "{\"channel\":\"#qa-automation-reports\", \"text\":\"$MESSAGE\"}" https://hooks.slack.com/services/T0GDU72/B0RQA0/fnZUFgfuMVdcI
