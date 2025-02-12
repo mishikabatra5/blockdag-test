@@ -68,4 +68,10 @@ jobs:
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/emailable-report.html
 
-     
+      # ✅ Send Slack Notification
+      - name: Send Slack Notification
+        if: always()
+        run: |
+          STATUS=${{ job.status }}
+          MESSAGE="Test run completed with status: $STATUS"
+          curl -X POST -H 'Content-type: application/json' --data "{\"channel\":\"${{ secrets.SLACK_CHANNEL_NAME }}\", \"text\":\"$MESSAGE\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
