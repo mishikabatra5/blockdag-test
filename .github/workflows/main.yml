@@ -42,42 +42,36 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      - name: Run Tests for Mainnet
-        id: mainnet
-        run: |
-          mvn clean test -D=https://bdagscan.com
+      - name: Run Tests
+        id: run_tests
+        run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml
         working-directory: BlockDAG-Automation
 
-      - name: Upload Mainnet Reports to S3
+      - name: Upload Surefire Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: BlockDAG-Automation/target/surefire-reports
+
+      - name: Upload Emailable Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emailable-report
+          path: BlockDAG-Automation/test-output/emailable-report.html
+
+      # ✅ Upload reports to S3
+      - name: Upload Test Reports to S3
         if: always()
         run: |
-          # Get current date and time
-          CURRENT_DATE=$(date +'%Y/%m/%d')
-          CURRENT_TIME=$(date +'%H-%M-%S')
-          S3_PATH="mainnet/${CURRENT_DATE}/${CURRENT_TIME}/"
-          
-          # Upload Surefire Reports
-          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_PATH}surefire-reports/ --recursive
-          
-          # Upload ExtentReport
-          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_PATH}ExtentReport.html
+          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/surefire-reports/ --recursive
+          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/emailable-report.html
 
-      - name: Run Tests for Stage
-        id: stage
-        run: |
-          mvn test -DsuiteXmlFile=src/test/resources/testng.xml
-        working-directory: BlockDAG-Automation
-
-      - name: Upload Stage Reports to S3
+      # ✅ Send Slack Notification
+      - name: Send Slack Notification
         if: always()
         run: |
-          # Get current date and time
-          CURRENT_DATE=$(date +'%Y/%m/%d')
-          CURRENT_TIME=$(date +'%H-%M-%S')
-          S3_PATH="stage/${CURRENT_DATE}/${CURRENT_TIME}/"
-          
-          # Upload Surefire Reports
-          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_PATH}surefire-reports/ --recursive
-          
-          # Upload ExtentReport
-          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_PATH}ExtentReport.html
+          STATUS=${{ job.status }}
+          MESSAGE="Test run completed with status: $STATUS"
+          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$MESSAGE\"}" https://hooks.slack.com/services/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
