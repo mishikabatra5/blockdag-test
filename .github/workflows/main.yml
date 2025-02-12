@@ -42,8 +42,22 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
+      - name: Determine Environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ENVIRONMENT=mainnet" >> $GITHUB_ENV
+          else
+            echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+          fi
+
       - name: Run Tests
-        run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml
+        run: |
+          if [[ "$ENVIRONMENT" == "mainnet" ]]; then
+            mvn clean test -D=https://bdagscan.com
+          else
+            mvn test -DsuiteXmlFile=src/test/resources/testng.xml
+          fi
         working-directory: BlockDAG-Automation
 
       - name: Upload Surefire Reports
