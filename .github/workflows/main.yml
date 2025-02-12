@@ -78,5 +78,19 @@ jobs:
       - name: Upload Test Reports to S3
         if: always()
         run: |
-          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/surefire-reports/ --recursive
-          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/ExtentReport.html
+          # Get current date and time
+          CURRENT_DATE=$(date +'%Y/%m/%d')
+          CURRENT_TIME=$(date +'%H-%M-%S')
+          
+          # Determine the S3 path based on the environment
+          if [[ "$ENVIRONMENT" == "mainnet" ]]; then
+            S3_PATH="mainnet/${CURRENT_DATE}/${CURRENT_TIME}/"
+          else
+            S3_PATH="stage/${CURRENT_DATE}/${CURRENT_TIME}/"
+          fi
+          
+          # Upload Surefire Reports
+          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_PATH}surefire-reports/ --recursive
+          
+          # Upload ExtentReport
+          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_PATH}ExtentReport.html
