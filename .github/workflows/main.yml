@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: emailable-report
-          path: BlockDAG-Automation/test-output/emailable-report.html
+          path: BlockDAG-Automation/test-output/ExtentReport.html
 
       # ✅ Upload reports to S3 with formatted path
       - name: Upload Test Reports to S3
@@ -74,8 +74,9 @@ jobs:
           S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
           
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_BASE_PATH}surefire-reports/ --recursive
-          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/${S3_BASE_PATH}emailable-report.html
+          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_BASE_PATH}ExtentReport.html
 
+      
       # ✅ Send Slack Notification
       - name: Send Slack Notification
         if: always()
@@ -87,8 +88,11 @@ jobs:
           DAY=$(date +"%d")
           TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
           
-          S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
-          REPORT_LINK="s3://stage-test-report-blockag/${S3_BASE_PATH}emailable-report.html"
+          # Construct the report link using the secret
+          REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/ExtentReport.html"
           
+          # Create the message to send to Slack
           MESSAGE="Test case run for stage environment on $DATE_TIME. \n\nReport: $REPORT_LINK"
+          
+          # Send the notification to Slack
           curl -X POST -H 'Content-type: application/json' --data "{\"channel\":\"${{ secrets.SLACK_CHANNEL_NAME }}\", \"text\":\"$MESSAGE\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
