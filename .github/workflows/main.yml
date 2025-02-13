@@ -61,12 +61,20 @@ jobs:
           name: emailable-report
           path: BlockDAG-Automation/test-output/emailable-report.html
 
-      # ✅ Upload reports to S3
+      # ✅ Upload reports to S3 with formatted path
       - name: Upload Test Reports to S3
         if: always()
         run: |
-          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/surefire-reports/ --recursive
-          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/emailable-report.html
+          CURRENT_DATE=$(date +"%Y-%m-%d")
+          YEAR=$(date +"%Y")
+          MONTH=$(date +"%m")
+          DAY=$(date +"%d")
+          TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
+          
+          S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
+          
+          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_BASE_PATH}surefire-reports/ --recursive
+          aws s3 cp BlockDAG-Automation/test-output/emailable-report.html s3://stage-test-report-blockag/${S3_BASE_PATH}emailable-report.html
 
       # ✅ Send Slack Notification
       - name: Send Slack Notification
@@ -74,5 +82,13 @@ jobs:
         run: |
           STATUS=${{ job.status }}
           DATE_TIME=$(date +"%Y-%m-%d %H:%M:%S")
-          MESSAGE="Test case run for stage environment on $DATE_TIME. \n\nReport: ${{ secrets.REPORT_LINK_EMAILABLE }}"
+          YEAR=$(date +"%Y")
+          MONTH=$(date +"%m")
+          DAY=$(date +"%d")
+          TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
+          
+          S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
+          REPORT_LINK="s3://stage-test-report-blockag/${S3_BASE_PATH}emailable-report.html"
+          
+          MESSAGE="Test case run for stage environment on $DATE_TIME. \n\nReport: $REPORT_LINK"
           curl -X POST -H 'Content-type: application/json' --data "{\"channel\":\"${{ secrets.SLACK_CHANNEL_NAME }}\", \"text\":\"$MESSAGE\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
