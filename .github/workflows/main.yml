@@ -73,5 +73,6 @@ jobs:
         if: always()
         run: |
           STATUS=${{ job.status }}
-          MESSAGE="Test run completed with status: $STATUS"
+          DATE_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+          MESSAGE="Test case run for stage environment on $DATE_TIME. \n\nReport: ${{ secrets.REPORT_LINK_EMAILABLE }}"
           curl -X POST -H 'Content-type: application/json' --data "{\"channel\":\"${{ secrets.SLACK_CHANNEL_NAME }}\", \"text\":\"$MESSAGE\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
