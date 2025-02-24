@@ -42,6 +42,20 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
+      - name: Generate Timestamp
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")
+          YEAR=$(date +"%Y")
+          MONTH=$(date +"%m")
+          DAY=$(date +"%d")
+          TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
+
+          S3_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
+
+          echo "TIMESTAMP=\"$TIMESTAMP\"" > timestamp.env
+          echo "S3_PATH=\"$S3_PATH\"" >> timestamp.env
+          cat timestamp.env  # Debugging - Check if values are correct
+
       - name: Run Tests
         id: run_tests
         run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml
@@ -61,39 +75,23 @@ jobs:
           name: emailable-report
           path: BlockDAG-Automation/test-output/ExtentReport.html
 
-      # ✅ Generate timestamp and store it in a file
-      - name: Generate Timestamp
-        run: |
-          TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")
-          YEAR=$(date +"%Y")
-          MONTH=$(date +"%m")
-          DAY=$(date +"%d")
-          TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
-
-          S3_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
-
-          echo "TIMESTAMP=$TIMESTAMP" > timestamp.env
-          echo "S3_PATH=$S3_PATH" >> timestamp.env
-
-      # ✅ Upload reports to S3 using the exact saved timestamp
       - name: Upload Test Reports to S3
         if: always()
         run: |
-          source timestamp.env
-          
+          export $(grep -E '^[A-Z_]+="[^"]*"$' timestamp.env | xargs)
+
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/$S3_PATH/surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/$S3_PATH/ExtentReport.html
 
-      # ✅ Send Google Chat Notification with the exact timestamp-based path
       - name: Send Google Chat Notification
         if: always()
         run: |
-          source timestamp.env
+          export $(grep -E '^[A-Z_]+="[^"]*"$' timestamp.env | xargs)
 
           REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/$S3_PATH/ExtentReport.html"
-          
+
           MESSAGE="🚀 Test case run for stage environment on **$TIMESTAMP**. \n\n🔗 Report: $REPORT_LINK"
-          
+
           curl -X POST -H 'Content-Type: application/json' \
             -d "{\"text\": \"$MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
