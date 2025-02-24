@@ -1,0 +1,102 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::211125780543:role/stage-oidc-blockdag
+          aws-region: eu-central-1
+
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      - name: Set Global Timestamp
+        id: set_timestamp
+        run: echo "GLOBAL_TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")" >> $GITHUB_ENV
+
+      - name: Run Tests
+        id: run_tests
+        run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml
+        working-directory: BlockDAG-Automation
+
+      - name: Upload Surefire Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: BlockDAG-Automation/target/surefire-reports
+
+      - name: Upload Emailable Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emailable-report
+          path: BlockDAG-Automation/test-output/ExtentReport.html
+
+      # ✅ Upload reports to S3 with formatted path
+      - name: Upload Test Reports to S3
+        if: always()
+        run: |
+          YEAR=$(date +"%Y")
+          MONTH=$(date +"%m")
+          DAY=$(date +"%d")
+          TIME_FORMAT_FOLDER="${{ env.GLOBAL_TIMESTAMP }}"  # Use the global timestamp
+
+          # Replace colons with hyphens for S3 compatibility
+          SAFE_TIME_FORMAT_FOLDER=$(echo $TIME_FORMAT_FOLDER | tr ':' '-')
+          
+          S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${SAFE_TIME_FORMAT_FOLDER}/"
+          
+          aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_BASE_PATH}surefire-reports/ --recursive
+          aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_BASE_PATH}ExtentReport.html
+
+      # ✅ Send Google Chat Notification
+      - name: Send Google Chat Notification
+        if: always()
+        run: |
+          STATUS=${{ job.status }}
+          DATE_TIME="${{ env.GLOBAL_TIMESTAMP }}"
+          YEAR=$(date +"%Y")
+          MONTH=$(date +"%m")
+          DAY=$(date +"%d")
+          
+          # Construct the report link using the secret
+          REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/stage/${YEAR}/${MONTH}/${DAY}/${DATE_TIME}/ExtentReport.html"
+          
+          # Create the message to send to Google Chat
+          MESSAGE="Test case run for stage environment on $DATE_TIME. \n\nReport: $REPORT_LINK"
+          
+          # Send the notification to Google Chat
+          curl -X POST -H 'Content-Type: application/json' --data "{\"text\":\"$MESSAGE\"}" ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
