@@ -72,9 +72,12 @@ jobs:
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
-          TIME_FORMAT_FOLDER="${{ env.TIMESTAMP }}"
+          TIME_FORMAT_FOLDER="${{ env.TIMESTAMP }}"  # Use the same timestamp
+
+          # Replace colons with hyphens for S3 compatibility
+          SAFE_TIME_FORMAT_FOLDER=$(echo $TIME_FORMAT_FOLDER | tr ':' '-')
           
-          S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
+          S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${SAFE_TIME_FORMAT_FOLDER}/"
           
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_BASE_PATH}surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_BASE_PATH}ExtentReport.html
