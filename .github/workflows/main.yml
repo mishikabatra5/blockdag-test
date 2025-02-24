@@ -42,6 +42,10 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
+      - name: Set Timestamp
+        id: set_timestamp
+        run: echo "TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+
       - name: Run Tests
         id: run_tests
         run: mvn test -DsuiteXmlFile=src/test/resources/testng.xml
@@ -65,7 +69,6 @@ jobs:
       - name: Upload Test Reports to S3
         if: always()
         run: |
-          CURRENT_DATE=$(date +"%Y-%m-%d")
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
@@ -76,13 +79,12 @@ jobs:
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${S3_BASE_PATH}surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${S3_BASE_PATH}ExtentReport.html
 
-      
       # ✅ Send Slack Notification
       - name: Send Slack Notification
         if: always()
         run: |
           STATUS=${{ job.status }}
-          DATE_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+          DATE_TIME="${{ env.TIMESTAMP }}"
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
