@@ -44,7 +44,7 @@ jobs:
 
       - name: Set Timestamp
         id: set_timestamp
-        run: echo "TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+        run: echo "TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")" >> $GITHUB_ENV
 
       - name: Run Tests
         id: run_tests
@@ -72,7 +72,7 @@ jobs:
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
-          TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
+          TIME_FORMAT_FOLDER="${{ env.TIMESTAMP }}"
           
           S3_BASE_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
           
@@ -88,10 +88,9 @@ jobs:
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
-          TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
           
           # Construct the report link using the secret
-          REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/ExtentReport.html"
+          REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/stage/${YEAR}/${MONTH}/${DAY}/${DATE_TIME}/ExtentReport.html"
           
           # Create the message to send to Slack
           MESSAGE="Test case run for stage environment on $DATE_TIME. \n\nReport: $REPORT_LINK"
