@@ -42,7 +42,7 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      - name: Generate Timestamp
+      - name: Generate Timestamp and S3 Path
         run: |
           TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")
           YEAR=$(date +"%Y")
@@ -52,9 +52,8 @@ jobs:
 
           S3_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
 
-          echo "TIMESTAMP=\"$TIMESTAMP\"" > timestamp.env
-          echo "S3_PATH=\"$S3_PATH\"" >> timestamp.env
-          cat timestamp.env  # Debugging - Check if values are correct
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+          echo "S3_PATH=$S3_PATH" >> $GITHUB_ENV
 
       - name: Run Tests
         id: run_tests
@@ -78,20 +77,16 @@ jobs:
       - name: Upload Test Reports to S3
         if: always()
         run: |
-          export $(grep -E '^[A-Z_]+="[^"]*"$' timestamp.env | xargs)
-
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/$S3_PATH/surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/$S3_PATH/ExtentReport.html
 
       - name: Send Google Chat Notification
         if: always()
         run: |
-          export $(grep -E '^[A-Z_]+="[^"]*"$' timestamp.env | xargs)
-
           REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/$S3_PATH/ExtentReport.html"
-
+          
           MESSAGE="🚀 Test case run for stage environment on **$TIMESTAMP**. \n\n🔗 Report: $REPORT_LINK"
-
+          
           curl -X POST -H 'Content-Type: application/json' \
             -d "{\"text\": \"$MESSAGE\"}" \
             "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
