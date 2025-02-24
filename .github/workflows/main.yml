@@ -42,9 +42,9 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      - name: Set Timestamp
+      - name: Set Global Timestamp
         id: set_timestamp
-        run: echo "TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")" >> $GITHUB_ENV
+        run: echo "GLOBAL_TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")" >> $GITHUB_ENV
 
       - name: Run Tests
         id: run_tests
@@ -72,7 +72,7 @@ jobs:
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
-          TIME_FORMAT_FOLDER="${{ env.TIMESTAMP }}"  # Use the same timestamp
+          TIME_FORMAT_FOLDER="${{ env.GLOBAL_TIMESTAMP }}"  # Use the global timestamp
 
           # Replace colons with hyphens for S3 compatibility
           SAFE_TIME_FORMAT_FOLDER=$(echo $TIME_FORMAT_FOLDER | tr ':' '-')
@@ -87,7 +87,7 @@ jobs:
         if: always()
         run: |
           STATUS=${{ job.status }}
-          DATE_TIME="${{ env.TIMESTAMP }}"
+          DATE_TIME="${{ env.GLOBAL_TIMESTAMP }}"
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
