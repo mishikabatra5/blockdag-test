@@ -90,7 +90,7 @@ jobs:
           REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/${{ env.S3_PATH }}ExtentReport.html"
           
           # # Ensure single slashes in URL
-          # REPORT_LINK=$(echo "$REPORT_LINK" | sed 's:/\+:/:g')
+           REPORT_LINK=$(echo "$REPORT_LINK" | sed 's:/\+:/:g')
           
           MESSAGE="🚀 *Test case run for stage environment on:* ${{ env.TIMESTAMP }}.\n\n🔗 \n\nReport: $REPORT_LINK"
           
