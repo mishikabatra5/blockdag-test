@@ -82,8 +82,8 @@ jobs:
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/$S3_PATH/surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/$S3_PATH/ExtentReport.html
 
-      # ✅ Send Google Chat Notification
-      - name: Send Google Chat Notification
+      # ✅ Send Slack Notification with Consistent Timestamp
+      - name: Send Slack Notification
         if: always()
         run: |
           REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/$S3_PATH/ExtentReport.html"
@@ -91,8 +91,8 @@ jobs:
           # Fix double slashes in URL
           REPORT_LINK=$(echo "$REPORT_LINK" | sed 's:/\+:/:g')
 
-          MESSAGE="🚀 Test case run for stage environment on **$TIMESTAMP**. \n\n🔗 Report: $REPORT_LINK"
-          
-          curl -X POST -H 'Content-Type: application/json' \
-            -d "{\"text\": \"$MESSAGE\"}" \
-            "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
+          MESSAGE="🚀 Test case run for stage environment on *$TIMESTAMP*.\n\n🔗 *Report:* <$REPORT_LINK|Click here>"
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"channel\":\"${{ secrets.SLACK_CHANNEL_NAME }}\", \"text\":\"$MESSAGE\"}" \
+            "${{ secrets.SLACK_WEBHOOK_URL }}"
