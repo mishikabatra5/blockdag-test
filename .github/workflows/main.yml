@@ -61,6 +61,7 @@ jobs:
           name: emailable-report
           path: BlockDAG-Automation/test-output/ExtentReport.html
 
+      # ✅ Generate timestamp once and pass as an output variable
       - name: Generate Timestamp
         id: generate_timestamp
         run: |
@@ -69,21 +70,30 @@ jobs:
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
           TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
-          S3_PATH="stage/$YEAR/$MONTH/$DAY/$TIME_FORMAT_FOLDER/"
+          
+          S3_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
+          
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
           echo "S3_PATH=$S3_PATH" >> $GITHUB_ENV
 
+      # ✅ Upload reports to S3 with exact timestamp path
       - name: Upload Test Reports to S3
         if: always()
         run: |
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/${{ env.S3_PATH }}surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/${{ env.S3_PATH }}ExtentReport.html
 
+      # ✅ Send Slack Notification with Clickable Link
       - name: Send Slack Notification
         if: always()
         run: |
-          REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/$(echo "${{ env.S3_PATH }}" | sed 's:/\+:/:g')ExtentReport.html"
+          REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/${{ env.S3_PATH }}ExtentReport.html"
+          
+          # Ensure single slashes in URL
+          REPORT_LINK=$(echo "$REPORT_LINK" | sed 's:/\+:/:g')
+          
           MESSAGE="🚀 *Test case run for stage environment on:* ${{ env.TIMESTAMP }}.\n\n🔗 *<${REPORT_LINK}|View Report>*"
+          
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"channel\":\"${{ secrets.SLACK_CHANNEL_NAME }}\", \"text\":\"$MESSAGE\"}" \
             ${{ secrets.SLACK_WEBHOOK_URL }}
