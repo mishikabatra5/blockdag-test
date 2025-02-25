@@ -42,16 +42,17 @@ jobs:
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      - name: Generate Timestamp and S3 Path
+      # ✅ Generate Timestamp Once and Save
+      - name: Generate Timestamp
         run: |
           TIMESTAMP=$(date +"%Y-%m-%d %H-%M-%S")
           YEAR=$(date +"%Y")
           MONTH=$(date +"%m")
           DAY=$(date +"%d")
           TIME_FORMAT_FOLDER=$(date +"%H-%M-%S")
-
-          S3_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}/"
-
+          
+          S3_PATH="stage/${YEAR}/${MONTH}/${DAY}/${TIME_FORMAT_FOLDER}"
+          
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
           echo "S3_PATH=$S3_PATH" >> $GITHUB_ENV
 
@@ -74,17 +75,22 @@ jobs:
           name: emailable-report
           path: BlockDAG-Automation/test-output/ExtentReport.html
 
+      # ✅ Upload Reports to S3 with Correct Path
       - name: Upload Test Reports to S3
         if: always()
         run: |
           aws s3 cp BlockDAG-Automation/target/surefire-reports s3://stage-test-report-blockag/$S3_PATH/surefire-reports/ --recursive
           aws s3 cp BlockDAG-Automation/test-output/ExtentReport.html s3://stage-test-report-blockag/$S3_PATH/ExtentReport.html
 
+      # ✅ Send Google Chat Notification
       - name: Send Google Chat Notification
         if: always()
         run: |
           REPORT_LINK="${{ secrets.REPORT_LINK_EMAILABLE }}/$S3_PATH/ExtentReport.html"
           
+          # Fix double slashes in URL
+          REPORT_LINK=$(echo "$REPORT_LINK" | sed 's:/\+:/:g')
+
           MESSAGE="🚀 Test case run for stage environment on **$TIMESTAMP**. \n\n🔗 Report: $REPORT_LINK"
           
           curl -X POST -H 'Content-Type: application/json' \
